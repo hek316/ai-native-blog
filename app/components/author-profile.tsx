@@ -24,7 +24,7 @@ export default function AuthorProfile({ author }: AuthorProfileProps) {
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-neutral-900 dark:text-neutral-100 mb-1">
-            {author.name}
+            {author.name} Sir
           </h3>
           <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed">
             {author.bio}
