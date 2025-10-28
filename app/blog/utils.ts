@@ -1,11 +1,18 @@
 import fs from 'fs'
 import path from 'path'
 
+type Author = {
+  name: string
+  bio: string
+  avatarUrl: string
+}
+
 type Metadata = {
   title: string
   publishedAt: string
   summary: string
   image?: string
+  author?: Author
 }
 
 function parseFrontmatter(fileContent: string) {
@@ -15,12 +22,40 @@ function parseFrontmatter(fileContent: string) {
   let content = fileContent.replace(frontmatterRegex, '').trim()
   let frontMatterLines = frontMatterBlock.trim().split('\n')
   let metadata: Partial<Metadata> = {}
+  let currentKey: string | null = null
+  let currentObject: any = null
 
   frontMatterLines.forEach((line) => {
-    let [key, ...valueArr] = line.split(': ')
-    let value = valueArr.join(': ').trim()
-    value = value.replace(/^['"](.*)['"]$/, '$1') // Remove quotes
-    metadata[key.trim() as keyof Metadata] = value
+    // Check if this is a nested property (starts with spaces)
+    if (line.match(/^\s+\w+:/)) {
+      let colonIndex = line.indexOf(':')
+      let nestedKey = line.substring(0, colonIndex).trim()
+      let nestedValue = line.substring(colonIndex + 1).trim()
+      nestedValue = nestedValue.replace(/^['"](.*)['"]$/, '$1') // Remove quotes
+      if (currentObject) {
+        currentObject[nestedKey] = nestedValue
+      }
+    } else {
+      // This is a top-level property
+      let colonIndex = line.indexOf(':')
+      if (colonIndex === -1) return
+
+      let key = line.substring(0, colonIndex).trim()
+      let value = line.substring(colonIndex + 1).trim()
+
+      if (value === '') {
+        // This might be an object property (like author:)
+        currentKey = key
+        currentObject = {}
+        metadata[currentKey as keyof Metadata] = currentObject as any
+      } else {
+        // Simple string property
+        value = value.replace(/^['"](.*)['"]$/, '$1') // Remove quotes
+        metadata[key as keyof Metadata] = value as any
+        currentKey = null
+        currentObject = null
+      }
+    }
   })
 
   return { metadata: metadata as Metadata, content }
